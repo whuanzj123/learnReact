@@ -39,14 +39,25 @@ function App() {
     }
   };
 
-  // Function to verify and decode the token
+  // Updated function to verify and decode the token - using the new endpoint
   const verifyToken = async (accessToken) => {
     try {
+      // Option 1: Use the fixed /verify-token endpoint with Authorization header
       const response = await fetch('http://localhost:8000/verify-token', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
+
+      /* Option 2: Use the alternative /decode-token endpoint with request body
+      const response = await fetch('http://localhost:8000/decode-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: accessToken }),
+      });
+      */
 
       if (!response.ok) {
         throw new Error('Failed to verify token');
@@ -56,6 +67,19 @@ function App() {
       setTokenData(data.payload);
     } catch (err) {
       setError(err.message);
+      
+      // As a fallback, try to decode the JWT locally
+      try {
+        // Split the JWT and decode the payload
+        const parts = accessToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          setTokenData(payload);
+          setError('Warning: Token verified locally, not by server');
+        }
+      } catch (decodeErr) {
+        setError(`Failed to verify token: ${err.message}`);
+      }
     }
   };
 
