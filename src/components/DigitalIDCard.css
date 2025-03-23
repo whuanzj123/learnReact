@@ -1,0 +1,121 @@
+/* DigitalIDCard.css */
+.id-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  }
+  
+  .id-card-header {
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    color: white;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .id-logo {
+    background-color: white;
+    color: #3498db;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+  }
+  
+  .id-card-header h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+  
+  .id-number {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  
+  .id-card-body {
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .id-photo {
+    flex: 0 0 80px;
+  }
+  
+  .avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+    font-weight: 500;
+  }
+  
+  .id-details {
+    flex: 1;
+  }
+  
+  .id-details h3 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+  }
+  
+  .id-details p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #34495e;
+  }
+  
+  .id-details p span {
+    font-weight: bold;
+    display: inline-block;
+    width: 80px;
+  }
+  
+  .id-card-footer {
+    padding: 15px;
+    border-top: 1px solid #ecf0f1;
+    text-align: center;
+  }
+  
+  .details-toggle {
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: underline;
+  }
+  
+  .token-details {
+    margin-top: 15px;
+    text-align: left;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .token-details h4 {
+    margin-top: 0;
+    font-size: 14px;
+  }
+  
+  .token-details pre {
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
