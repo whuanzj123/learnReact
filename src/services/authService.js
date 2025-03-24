@@ -32,10 +32,16 @@ class AuthService {
     return accounts[0];
   }
 
-  // Login
+  // Login - using organization-approved scopes
   login() {
+    // Ensure we're requesting the approved scopes
+    const request = {
+      ...loginRequest,
+      prompt: 'select_account' // Force account selection each time
+    };
+
     if (authMethod.usePopup) {
-      return this.msalInstance.loginPopup(loginRequest)
+      return this.msalInstance.loginPopup(request)
         .then(response => {
           console.log('Login successful', response);
           return response;
@@ -45,7 +51,7 @@ class AuthService {
           throw error;
         });
     } else {
-      this.msalInstance.loginRedirect(loginRequest);
+      this.msalInstance.loginRedirect(request);
       // Redirect methods don't return promises
       return Promise.resolve();
     }
@@ -55,6 +61,7 @@ class AuthService {
   logout() {
     const logoutRequest = {
       account: this.getAccount(),
+      postLogoutRedirectUri: window.location.origin
     };
 
     if (authMethod.usePopup) {
@@ -64,13 +71,14 @@ class AuthService {
     }
   }
 
-  // Acquire token silently
+  // Acquire token silently - using organization-approved scopes
   getToken() {
     const account = this.getAccount();
     if (!account) {
       return Promise.reject('No active account found');
     }
 
+    // For API access
     const request = {
       ...apiRequest,
       account: account
@@ -94,6 +102,16 @@ class AuthService {
           return Promise.reject('Redirecting for token acquisition');
         }
       });
+  }
+  
+  // Get ID token for user profile data
+  getIdTokenClaims() {
+    const account = this.getAccount();
+    if (!account) {
+      return null;
+    }
+    
+    return this.msalInstance.getActiveAccount().idTokenClaims;
   }
 
   // Check if user is authenticated
