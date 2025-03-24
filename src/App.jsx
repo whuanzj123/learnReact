@@ -1,117 +1,97 @@
-import { useState } from 'react';
-import TokenForm from './components/TokenForm';
+import { useState, useEffect } from 'react';
+import { AuthProvider } from './components/AuthProvider';
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
+// import TokenForm from './components/TokenForm';
 import DigitalIDCard from './components/DigitalIDCard';
+import LoginButton from './components/LoginButton';
 import './App.css';
 
-function App() {
+// Component that requires authentication
+const AuthenticatedContent = () => {
+  const { instance, accounts } = useMsal();
   const [token, setToken] = useState(null);
   const [tokenData, setTokenData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [azureToken, setAzureToken] = useState(null);
 
-  // Function to request token from backend
-  const requestToken = async (userData) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch('http://localhost:8000/generate-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate token');
-      }
-
-      const data = await response.json();
-      setToken(data.access_token);
-      
-      // Now verify the token to get the decoded data
-      await verifyToken(data.access_token);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Updated function to verify and decode the token - using the new endpoint
-  const verifyToken = async (accessToken) => {
-    try {
-      // Option 1: Use the fixed /verify-token endpoint with Authorization header
-      const response = await fetch('http://localhost:8000/verify-token', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      /* Option 2: Use the alternative /decode-token endpoint with request body
-      const response = await fetch('http://localhost:8000/decode-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: accessToken }),
-      });
-      */
-
-      if (!response.ok) {
-        throw new Error('Failed to verify token');
-      }
-
-      const data = await response.json();
-      setTokenData(data.payload);
-    } catch (err) {
-      setError(err.message);
-      
-      // As a fallback, try to decode the JWT locally
-      try {
-        // Split the JWT and decode the payload
-        const parts = accessToken.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
+  // When component mounts, get Azure AD token
+  useEffect(() => {
+    if (accounts.length > 0) {
+      // Get token silently
+      instance.acquireTokenSilent({
+        scopes: ['User.Read'],
+        account: accounts[0]
+      }).then(response => {
+        console.log('Azure AD token acquired:', response);
+        setAzureToken(response.accessToken);
+        
+        // Decode the token to get user info
+        const tokenParts = response.accessToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
           setTokenData(payload);
-          setError('Warning: Token verified locally, not by server');
         }
-      } catch (decodeErr) {
-        setError(`Failed to verify token: ${err.message}`);
-      }
+      }).catch(error => {
+        console.error('Token acquisition failed:', error);
+        setError('Failed to acquire token: ' + error.message);
+      });
     }
+  }, [instance, accounts]);
+
+  const handleLogout = () => {
+    instance.logout();
   };
 
-  // Reset state to request a new token
-  const handleReset = () => {
-    setToken(null);
-    setTokenData(null);
-    setError(null);
-  };
-
+  // If we have Azure AD token and user data, display the ID card
   return (
-    <div className="app-container">
+    <div className="authenticated-content">
       <header>
-        <h1>Digital ID Card System</h1>
+        <div className="header-content">
+          <h1>Digital ID Card System</h1>
+          <button onClick={handleLogout} className="logout-button">Sign Out</button>
+        </div>
       </header>
 
       <main>
-        {!token ? (
-          <TokenForm onSubmit={requestToken} loading={loading} />
+        {tokenData ? (
+          <DigitalIDCard userData={tokenData} />
+        ) : loading ? (
+          <div className="loading">Loading ID card...</div>
         ) : (
-          <>
-            {tokenData && <DigitalIDCard userData={tokenData} />}
-            <button onClick={handleReset} className="reset-button">
-              Request New ID Card
-            </button>
-          </>
+          <div className="no-data">Retrieving your information...</div>
         )}
-
+        
         {error && <div className="error-message">{error}</div>}
       </main>
     </div>
   );
+};
+
+// Main App component
+function App() {
+  const isAuthenticated = useIsAuthenticated();
+
+  return (
+    <div className="app-container">
+      {!isAuthenticated ? (
+        <div className="login-container">
+          <h1>Digital ID Card System</h1>
+          <p>Please sign in with your Azure AD account to access your digital ID card.</p>
+          <LoginButton />
+        </div>
+      ) : (
+        <AuthenticatedContent />
+      )}
+    </div>
+  );
 }
 
-export default App;
+// Wrapped App with Authentication Provider
+const AppWithAuth = () => (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+
+export default AppWithAuth;
